@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.gradle/
+build/
+!launcher/build/
+launcher/resources/zephra-client.jar

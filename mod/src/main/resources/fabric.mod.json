@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "zephra",
+  "version": "${version}",
+  "name": "Zephra Client",
+  "description": "Lightweight PvP HUD modules.",
+  "environment": "client",
+  "entrypoints": { "client": ["dev.zephra.ZephraClient"] },
+  "mixins": ["zephra.mixins.json"],
+  "depends": { "fabricloader": ">=0.16.0", "minecraft": "~1.21.4", "java": ">=21", "fabric-api": "*" }
+}

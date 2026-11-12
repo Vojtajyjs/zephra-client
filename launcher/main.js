@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const { execFile } = require('child_process');
 const fs = require('fs');
 const { Client } = require('minecraft-launcher-core');
 const { Auth } = require('msmc');
@@ -96,23 +97,73 @@ ipcMain.handle('pickDir', async () => {
 });
 ipcMain.handle('ram', (_e, gb) => write({ ram: gb }));
 
+const run = (cmd, args) => new Promise((res, rej) => execFile(cmd, args, (e, so, se) => (e ? rej(new Error(se || e.message)) : res(so))));
+
+function findJava(dir) {
+  const exe = process.platform === 'win32' ? 'java.exe' : 'java';
+  const walk = (d, depth) => {
+    if (depth > 6) return null;
+    let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return null; }
+    for (const e of ents) {
+      const p = path.join(d, e.name);
+      if (e.isFile() && e.name === exe && path.basename(d) === 'bin') return p;
+      if (e.isDirectory()) { const r = walk(p, depth + 1); if (r) return r; }
+    }
+    return null;
+  };
+  return walk(dir, 0);
+}
+
+// Own Java 21 runtime, so players do not need to install anything.
+async function ensureJava() {
+  const dir = path.join(ROOT, 'java21');
+  let j = fs.existsSync(dir) ? findJava(dir) : null;
+  if (j) return j;
+  const osName = { darwin: 'mac', win32: 'windows', linux: 'linux' }[process.platform];
+  const arch = process.arch === 'arm64' ? 'aarch64' : 'x64';
+  status('Downloading Java 21 (one time only)…', 3);
+  const r = await fetch(`https://api.adoptium.net/v3/binary/latest/21/ga/${osName}/${arch}/jre/hotspot/normal/eclipse`, { headers: UA });
+  if (!r.ok) throw new Error('Could not download Java');
+  const tmp = path.join(ROOT, osName === 'windows' ? 'java21.zip' : 'java21.tar.gz');
+  fs.writeFileSync(tmp, Buffer.from(await r.arrayBuffer()));
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir, { recursive: true });
+  await run('tar', ['-xf', tmp, '-C', dir]);
+  fs.unlinkSync(tmp);
+  j = findJava(dir);
+  if (!j) throw new Error('Java install failed');
+  if (process.platform !== 'win32') fs.chmodSync(j, 0o755);
+  return j;
+}
+
 ipcMain.handle('play', async () => {
   if (!mclc) throw new Error('Sign in first');
   fs.mkdirSync(gameDir(), { recursive: true });
+  const java = await ensureJava();
   await ensureFabric();
   await ensureMods();
+  const logFile = path.join(ROOT, 'latest.log');
+  fs.writeFileSync(logFile, '');
+  const log = (d) => fs.appendFileSync(logFile, String(d) + '\n');
   const launcher = new Client();
   launcher.on('progress', (e) => status(`Downloading ${e.type}…`, 70 + Math.min(25, (e.task / e.total) * 25)));
-  launcher.on('close', () => { status('Ready', 0); win.show(); });
+  launcher.on('debug', log);
+  launcher.on('data', log);
+  launcher.on('close', (code) => {
+    status(code ? `Game closed with an error (code ${code}). Log: ${logFile}` : 'Ready', 0);
+    win.show();
+  });
   const ram = read().ram || 4;
   status('Starting Minecraft…', 95);
-  await launcher.launch({
+  const proc = await launcher.launch({
     authorization: mclc,
     root: ROOT,
+    javaPath: java,
     version: { number: MC, type: 'release', custom: FABRIC_ID },
     memory: { max: `${ram}G`, min: '1G' },
     overrides: { gameDirectory: gameDir() },
   });
+  if (!proc) throw new Error(`Could not start the game. Log: ${logFile}`);
   status('Playing', 100);
   win.minimize();
 });

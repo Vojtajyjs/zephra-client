@@ -8,11 +8,12 @@ import java.util.*;
 /** Saved in .minecraft/config/zephra.json (editable by hand). */
 public class Config {
     public static class Mod {
-        public boolean enabled; public int x, y;
+        public boolean enabled; public int x, y; public float scale = 1f;
+        public Mod() {}
         public Mod(boolean enabled, int x, int y) { this.enabled = enabled; this.x = x; this.y = y; }
     }
     public static final String[] NAMES = {"fps", "cps", "coords", "keystrokes", "armor", "zoom", "fullbright", "togglesprint"};
-    public static final String[] LABELS = {"FPS", "CPS", "Coordinates", "Keystrokes", "Armor", "Zoom (hold C)", "Fullbright", "Toggle sprint"};
+    public static final String[] LABELS = {"FPS", "CPS", "Coordinates", "Keystrokes", "Armor", "Zoom (hold Z)", "Fullbright", "Toggle sprint"};
     public static Map<String, Mod> mods = new LinkedHashMap<>();
     static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("zephra.json");
     static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -33,7 +34,7 @@ public class Config {
         try {
             if (Files.exists(FILE)) {
                 JsonObject o = JsonParser.parseString(Files.readString(FILE)).getAsJsonObject();
-                for (String n : NAMES) if (o.has(n)) mods.put(n, GSON.fromJson(o.get(n), Mod.class));
+                for (String n : NAMES) if (o.has(n)) { Mod m = GSON.fromJson(o.get(n), Mod.class); if (m != null) { if (m.scale < 0.4f || m.scale > 4f) m.scale = 1f; mods.put(n, m); } }
             }
         } catch (Exception ignored) {}
         save();

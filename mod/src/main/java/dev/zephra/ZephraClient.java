@@ -15,7 +15,11 @@ public class ZephraClient implements ClientModInitializer {
     static boolean fb;
     static double savedGamma = 1.0;
 
-    public static boolean zooming() { return Config.on("zoom") && zoomKey != null && zoomKey.isPressed(); }
+    public static boolean zooming() {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (!Config.on("zoom") || zoomKey == null || mc.currentScreen != null) return false;
+        return InputUtil.isKeyPressed(mc.getWindow().getHandle(), KeyBindingHelper.getBoundKeyOf(zoomKey).getCode());
+    }
 
     static void gamma(MinecraftClient mc, double v) {
         ((SimpleOptionAccessor) (Object) mc.options.getGamma()).zephra$setValue(v);
@@ -25,7 +29,7 @@ public class ZephraClient implements ClientModInitializer {
         Config.load();
         Hud.init();
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open Zephra menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, "Zephra"));
-        zoomKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("Zoom", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_C, "Zephra"));
+        zoomKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("Zoom", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_Z, "Zephra"));
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             while (menuKey.wasPressed()) mc.setScreen(new ConfigScreen());
             if (Config.on("togglesprint") && mc.player != null && mc.currentScreen == null

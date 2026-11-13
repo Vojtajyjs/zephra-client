@@ -4,12 +4,15 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.option.KeyBinding;
 import net.minecraft.item.ItemStack;
 import java.util.ArrayDeque;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class Hud {
     static final ArrayDeque<Long> LEFT = new ArrayDeque<>(), RIGHT = new ArrayDeque<>();
+    public static final Map<String, int[]> BOUNDS = new LinkedHashMap<>();
+    static final String[] HUD = {"fps", "cps", "coords", "keystrokes", "armor"};
 
     public static void click(int button) {
         long now = System.currentTimeMillis();
@@ -26,14 +29,44 @@ public class Hud {
         HudRenderCallback.EVENT.register((ctx, tick) -> {
             MinecraftClient mc = MinecraftClient.getInstance();
             if (mc.player == null || mc.options.hudHidden || mc.currentScreen != null) return;
-            TextRenderer tr = mc.textRenderer;
-            Config.Mod m;
-            if (Config.on("fps")) { m = Config.mods.get("fps"); ctx.drawTextWithShadow(tr, mc.getCurrentFps() + " FPS", m.x, m.y, 0xFFFFFFFF); }
-            if (Config.on("cps")) { m = Config.mods.get("cps"); ctx.drawTextWithShadow(tr, cps(LEFT) + " | " + cps(RIGHT) + " CPS", m.x, m.y, 0xFFFFFFFF); }
-            if (Config.on("coords")) { m = Config.mods.get("coords"); var p = mc.player; ctx.drawTextWithShadow(tr, "XYZ " + p.getBlockX() + " " + p.getBlockY() + " " + p.getBlockZ() + "  " + p.getHorizontalFacing().asString().toUpperCase(), m.x, m.y, 0xFFFFFFFF); }
-            if (Config.on("keystrokes")) keys(ctx, tr, mc, Config.mods.get("keystrokes"));
-            if (Config.on("armor")) armor(ctx, tr, mc, Config.mods.get("armor"));
+            renderAll(ctx, mc, false);
         });
+    }
+
+    /** Draws every enabled module at its saved position and scale, and records its bounds. */
+    public static void renderAll(DrawContext ctx, MinecraftClient mc, boolean editing) {
+        BOUNDS.clear();
+        if (mc == null || mc.player == null) return;
+        for (String n : HUD) {
+            if (!Config.on(n)) continue;
+            Config.Mod m = Config.mods.get(n);
+            var mat = ctx.getMatrices();
+            mat.push();
+            mat.translate(m.x, m.y, 0);
+            mat.scale(m.scale, m.scale, 1f);
+            int[] sz = draw(n, ctx, mc);
+            mat.pop();
+            BOUNDS.put(n, new int[]{m.x, m.y, Math.round(sz[0] * m.scale), Math.round(sz[1] * m.scale)});
+        }
+    }
+
+    static int[] draw(String n, DrawContext c, MinecraftClient mc) {
+        TextRenderer tr = mc.textRenderer;
+        switch (n) {
+            case "fps": return text(c, tr, mc.getCurrentFps() + " FPS");
+            case "cps": return text(c, tr, cps(LEFT) + " | " + cps(RIGHT) + " CPS");
+            case "coords": {
+                var p = mc.player;
+                return text(c, tr, "XYZ " + p.getBlockX() + " " + p.getBlockY() + " " + p.getBlockZ() + "  " + p.getHorizontalFacing().asString().toUpperCase());
+            }
+            case "keystrokes": keys(c, tr, mc); return new int[]{64, 64};
+            default: return armor(c, tr, mc);
+        }
+    }
+
+    static int[] text(DrawContext c, TextRenderer tr, String s) {
+        c.drawTextWithShadow(tr, s, 0, 0, 0xFFFFFFFF);
+        return new int[]{tr.getWidth(s), 9};
     }
 
     static void key(DrawContext c, TextRenderer tr, int x, int y, int w, int h, String label, boolean down) {
@@ -41,25 +74,26 @@ public class Hud {
         c.drawCenteredTextWithShadow(tr, label, x + w / 2, y + (h - 8) / 2, down ? 0xFF000000 : 0xFFFFFFFF);
     }
 
-    static void keys(DrawContext c, TextRenderer tr, MinecraftClient mc, Config.Mod m) {
-        var o = mc.options; int s = 20, g = 2, x = m.x, y = m.y;
-        key(c, tr, x + s + g, y, s, s, "W", o.forwardKey.isPressed());
-        key(c, tr, x, y + s + g, s, s, "A", o.leftKey.isPressed());
-        key(c, tr, x + s + g, y + s + g, s, s, "S", o.backKey.isPressed());
-        key(c, tr, x + 2 * (s + g), y + s + g, s, s, "D", o.rightKey.isPressed());
+    static void keys(DrawContext c, TextRenderer tr, MinecraftClient mc) {
+        var o = mc.options; int s = 20, g = 2;
+        key(c, tr, s + g, 0, s, s, "W", o.forwardKey.isPressed());
+        key(c, tr, 0, s + g, s, s, "A", o.leftKey.isPressed());
+        key(c, tr, s + g, s + g, s, s, "S", o.backKey.isPressed());
+        key(c, tr, 2 * (s + g), s + g, s, s, "D", o.rightKey.isPressed());
         int w = (3 * s + 2 * g - g) / 2;
-        key(c, tr, x, y + 2 * (s + g), w, s, "LMB", o.attackKey.isPressed());
-        key(c, tr, x + w + g, y + 2 * (s + g), w, s, "RMB", o.useKey.isPressed());
+        key(c, tr, 0, 2 * (s + g), w, s, "LMB", o.attackKey.isPressed());
+        key(c, tr, w + g, 2 * (s + g), w, s, "RMB", o.useKey.isPressed());
     }
 
-    static void armor(DrawContext c, TextRenderer tr, MinecraftClient mc, Config.Mod m) {
-        int y = m.y;
+    static int[] armor(DrawContext c, TextRenderer tr, MinecraftClient mc) {
+        int y = 0;
         for (int i = 3; i >= 0; i--) {
             ItemStack st = mc.player.getInventory().getArmorStack(i);
             if (st.isEmpty()) continue;
-            c.drawItem(st, m.x, y);
-            if (st.isDamageable()) c.drawTextWithShadow(tr, String.valueOf(st.getMaxDamage() - st.getDamage()), m.x + 20, y + 4, 0xFFFFFFFF);
+            c.drawItem(st, 0, y);
+            if (st.isDamageable()) c.drawTextWithShadow(tr, String.valueOf(st.getMaxDamage() - st.getDamage()), 20, y + 4, 0xFFFFFFFF);
             y += 18;
         }
+        return new int[]{52, Math.max(y, 18)};
     }
 }

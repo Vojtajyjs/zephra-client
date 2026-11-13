@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, safeStorage } = require('electron');
+const os = require('os');
 const path = require('path');
 const { execFile } = require('child_process');
 const fs = require('fs');
@@ -23,15 +24,27 @@ const write = (o) => fs.writeFileSync(SETTINGS, JSON.stringify({ ...read(), ...o
 const status = (text, pct) => win && win.webContents.send('status', { text, pct });
 const UA = { 'User-Agent': 'zephra-launcher/0.1.0' };
 
+function saveSession(str) {
+  try {
+    if (safeStorage.isEncryptionAvailable()) write({ session: safeStorage.encryptString(str).toString('base64'), enc: true });
+    else write({ session: str, enc: false });
+  } catch {}
+}
+function loadSession() {
+  const o = read();
+  if (!o.session) return null;
+  try { return o.enc ? safeStorage.decryptString(Buffer.from(o.session, 'base64')) : o.session; } catch { return null; }
+}
+
 async function useXbox(xbox) {
   const token = await xbox.getMinecraft();
   mclc = token.mclc();
   profileName = token.profile.name;
-  write({ session: xbox.save() });
+  saveSession(xbox.save());
 }
 
 async function tryRestore() {
-  const { session } = read();
+  const session = loadSession();
   if (!session) return;
   try { await useXbox(await new Auth('select_account').refresh(session)); } catch { write({ session: null }); }
 }
@@ -144,7 +157,9 @@ ipcMain.handle('play', async () => {
   await ensureMods();
   const logFile = path.join(ROOT, 'latest.log');
   fs.writeFileSync(logFile, '');
-  const log = (d) => fs.appendFileSync(logFile, String(d) + '\n');
+  const home = os.homedir();
+  const clean = (t) => String(t).replace(/(--(?:accessToken|uuid|xuid|clientId|username)\s+)\S+/g, '$1***').split(home).join('~');
+  const log = (d) => fs.appendFileSync(logFile, clean(d) + '\n');
   const launcher = new Client();
   launcher.on('progress', (e) => status(`Downloading ${e.type}…`, 70 + Math.min(25, (e.task / e.total) * 25)));
   launcher.on('debug', log);
@@ -173,6 +188,7 @@ app.whenReady().then(() => {
     width: 820, height: 540, resizable: false, backgroundColor: '#000000', title: 'Zephra',
     autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.loadFile('index.html');
 });
 app.on('window-all-closed', () => app.quit());

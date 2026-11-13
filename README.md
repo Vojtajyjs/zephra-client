@@ -1,6 +1,6 @@
 # Zephra Client
 
-- `mod/` Fabric mod (1.21.4): FPS, CPS, Coordinates, Keystrokes, Armor, Zoom (hold C), Fullbright, Toggle sprint. Menu: Right Shift.
+- `mod/` Fabric mod (1.21.4): FPS, CPS, Coordinates, Keystrokes, Armor, Zoom (hold Z), Fullbright, Toggle sprint. Menu: Right Shift.
 - `launcher/` Electron launcher (black & white), Microsoft login, auto-installs Fabric + Sodium, Lithium, FerriteCore, ImmediatelyFast, EntityCulling, Fabric API.
 
 ## Vývoj

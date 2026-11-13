@@ -1,6 +1,6 @@
 {
   "name": "zephra-launcher",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Zephra Client launcher",
   "author": "Zephra",
   "main": "main.js",

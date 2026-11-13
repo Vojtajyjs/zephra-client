@@ -15,31 +15,31 @@ public class ConfigScreen extends Screen {
     int left() { return (width - W) / 2; }
     int top() { return (height - panelH()) / 2; }
 
-    @Override public void renderBackground(DrawContext c, int mx, int my, float d) { c.fill(0, 0, width, height, 0x44000000); }
+    @Override public void renderBackground(DrawContext c, int mx, int my, float d) { c.fill(0, 0, width, height, 0x22000000); }
 
     @Override public void render(DrawContext c, int mx, int my, float d) {
         super.render(c, mx, my, d);
         Hud.renderAll(c, client, false);
         int x = left(), y = top(), h = panelH();
-        c.fill(x - 1, y - 1, x + W + 1, y + h + 1, 0x77FFFFFF);
-        c.fill(x, y, x + W, y + h, 0xA6000000);
-        c.drawText(textRenderer, "ZEPHRA", x + 12, y + 13, 0xFFFFFFFF, false);
+        c.fill(x - 1, y - 1, x + W + 1, y + h + 1, 0x55FFFFFF);
+        c.fill(x, y, x + W, y + h, 0x55000000);
+        c.drawText(textRenderer, Fonts.t("ZEPHRA"), x + 12, y + 13, 0xFFFFFFFF, false);
         for (int i = 0; i < rows(); i++) {
             int ry = y + TOP + i * ROW;
             boolean hover = mx >= x && mx < x + W && my >= ry && my < ry + ROW;
             if (hover) c.fill(x + 1, ry, x + W - 1, ry + ROW, 0x33FFFFFF);
             if (i == Config.NAMES.length) {
-                c.drawText(textRenderer, "Edit HUD layout", x + 12, ry + 7, 0xFFFFFFFF, false);
-                c.drawText(textRenderer, ">", x + W - 22, ry + 7, 0xFFFFFFFF, false);
+                c.drawText(textRenderer, Fonts.t("Edit HUD layout"), x + 12, ry + 7, 0xFFFFFFFF, false);
+                c.drawText(textRenderer, Fonts.t(">"), x + W - 22, ry + 7, 0xFFFFFFFF, false);
                 continue;
             }
-            c.drawText(textRenderer, Config.LABELS[i], x + 12, ry + 7, 0xFFFFFFFF, false);
+            c.drawText(textRenderer, Fonts.t(Config.LABELS[i]), x + 12, ry + 7, 0xFFFFFFFF, false);
             boolean on = Config.mods.get(Config.NAMES[i]).enabled;
             int px = x + W - 46, py = ry + 4;
-            if (on) { c.fill(px, py, px + 34, py + 14, 0xFFFFFFFF); c.drawText(textRenderer, "ON", px + 11, py + 3, 0xFF000000, false); }
-            else { c.fill(px, py, px + 34, py + 14, 0xFF666666); c.fill(px + 1, py + 1, px + 33, py + 13, 0xFF000000); c.drawText(textRenderer, "OFF", px + 9, py + 3, 0xFF999999, false); }
+            if (on) { c.fill(px, py, px + 34, py + 14, 0xFFFFFFFF); c.drawText(textRenderer, Fonts.t("ON"), px + 11, py + 3, 0xFF000000, false); }
+            else { c.fill(px, py, px + 34, py + 14, 0xFF666666); c.fill(px + 1, py + 1, px + 33, py + 13, 0xFF000000); c.drawText(textRenderer, Fonts.t("OFF"), px + 9, py + 3, 0xFF999999, false); }
         }
-        c.drawText(textRenderer, "Right Shift closes", x + 12, y + h - 16, 0xFF999999, false);
+        c.drawText(textRenderer, Fonts.t("Right Shift closes"), x + 12, y + h - 16, 0xFF999999, false);
     }
 
     @Override public boolean mouseClicked(double mx, double my, int button) {

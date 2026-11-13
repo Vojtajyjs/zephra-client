@@ -12,7 +12,7 @@ import java.util.Map;
 public class Hud {
     static final ArrayDeque<Long> LEFT = new ArrayDeque<>(), RIGHT = new ArrayDeque<>();
     public static final Map<String, int[]> BOUNDS = new LinkedHashMap<>();
-    static final String[] HUD = {"fps", "cps", "coords", "keystrokes", "armor"};
+    static final String[] HUD = {"fps", "cps", "keystrokes", "armor"};
 
     public static void click(int button) {
         long now = System.currentTimeMillis();
@@ -55,23 +55,21 @@ public class Hud {
         switch (n) {
             case "fps": return text(c, tr, mc.getCurrentFps() + " FPS");
             case "cps": return text(c, tr, cps(LEFT) + " | " + cps(RIGHT) + " CPS");
-            case "coords": {
-                var p = mc.player;
-                return text(c, tr, "XYZ " + p.getBlockX() + " " + p.getBlockY() + " " + p.getBlockZ() + "  " + p.getHorizontalFacing().asString().toUpperCase());
-            }
             case "keystrokes": keys(c, tr, mc); return new int[]{64, 64};
             default: return armor(c, tr, mc);
         }
     }
 
     static int[] text(DrawContext c, TextRenderer tr, String s) {
-        c.drawTextWithShadow(tr, s, 0, 0, 0xFFFFFFFF);
-        return new int[]{tr.getWidth(s), 9};
+        var t = Fonts.t(s);
+        c.drawTextWithShadow(tr, t, 0, 0, 0xFFFFFFFF);
+        return new int[]{tr.getWidth(t), 9};
     }
 
     static void key(DrawContext c, TextRenderer tr, int x, int y, int w, int h, String label, boolean down) {
-        c.fill(x, y, x + w, y + h, down ? 0xB0FFFFFF : 0x70000000);
-        c.drawCenteredTextWithShadow(tr, label, x + w / 2, y + (h - 8) / 2, down ? 0xFF000000 : 0xFFFFFFFF);
+        c.fill(x, y, x + w, y + h, down ? 0xFFFFFFFF : 0x70000000);
+        if (down) c.drawText(tr, Fonts.t(label), x + (w - tr.getWidth(Fonts.t(label))) / 2, y + (h - 8) / 2, 0xFF000000, false);
+        else c.drawText(tr, Fonts.t(label), x + (w - tr.getWidth(Fonts.t(label))) / 2, y + (h - 8) / 2, 0xFFFFFFFF, true);
     }
 
     static void keys(DrawContext c, TextRenderer tr, MinecraftClient mc) {
@@ -91,7 +89,7 @@ public class Hud {
             ItemStack st = mc.player.getInventory().getArmorStack(i);
             if (st.isEmpty()) continue;
             c.drawItem(st, 0, y);
-            if (st.isDamageable()) c.drawTextWithShadow(tr, String.valueOf(st.getMaxDamage() - st.getDamage()), 20, y + 4, 0xFFFFFFFF);
+            if (st.isDamageable()) c.drawTextWithShadow(tr, Fonts.t(String.valueOf(st.getMaxDamage() - st.getDamage())), 20, y + 4, 0xFFFFFFFF);
             y += 18;
         }
         return new int[]{52, Math.max(y, 18)};

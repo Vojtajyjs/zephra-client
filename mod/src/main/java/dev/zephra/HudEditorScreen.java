@@ -33,7 +33,7 @@ public class HudEditorScreen extends Screen {
             c.fill(x1, y1, x1 + 1, y2, col); c.fill(x2 - 1, y1, x2, y2, col);
         }
         String hint = "Drag to move   |   Scroll to resize   |   Esc to finish";
-        c.drawText(textRenderer, hint, (width - textRenderer.getWidth(hint)) / 2, height - 22, 0xFFFFFFFF, false);
+        c.drawText(textRenderer, Fonts.t(hint), (width - textRenderer.getWidth(Fonts.t(hint))) / 2, height - 22, 0xFFFFFFFF, false);
     }
 
     @Override public boolean mouseClicked(double mx, double my, int button) {

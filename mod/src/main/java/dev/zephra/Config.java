@@ -12,18 +12,17 @@ public class Config {
         public Mod() {}
         public Mod(boolean enabled, int x, int y) { this.enabled = enabled; this.x = x; this.y = y; }
     }
-    public static final String[] NAMES = {"fps", "cps", "coords", "keystrokes", "armor", "zoom", "fullbright", "togglesprint"};
-    public static final String[] LABELS = {"FPS", "CPS", "Coordinates", "Keystrokes", "Armor", "Zoom (hold Z)", "Fullbright", "Toggle sprint"};
+    public static final String[] NAMES = {"fps", "cps", "keystrokes", "armor", "zoom", "fullbright", "togglesprint"};
+    public static final String[] LABELS = {"FPS", "CPS", "Keystrokes", "Armor", "Zoom (hold C)", "Fullbright", "Toggle sprint"};
     public static Map<String, Mod> mods = new LinkedHashMap<>();
     static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("zephra.json");
     static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     static void defaults() {
         mods.put("fps", new Mod(true, 6, 6));
-        mods.put("cps", new Mod(true, 6, 18));
-        mods.put("coords", new Mod(true, 6, 30));
-        mods.put("keystrokes", new Mod(true, 6, 50));
-        mods.put("armor", new Mod(true, 6, 140));
+        mods.put("cps", new Mod(true, 6, 20));
+        mods.put("keystrokes", new Mod(true, 6, 40));
+        mods.put("armor", new Mod(true, 6, 130));
         mods.put("zoom", new Mod(true, 0, 0));
         mods.put("fullbright", new Mod(false, 0, 0));
         mods.put("togglesprint", new Mod(false, 0, 0));
@@ -34,7 +33,10 @@ public class Config {
         try {
             if (Files.exists(FILE)) {
                 JsonObject o = JsonParser.parseString(Files.readString(FILE)).getAsJsonObject();
-                for (String n : NAMES) if (o.has(n)) { Mod m = GSON.fromJson(o.get(n), Mod.class); if (m != null) { if (m.scale < 0.4f || m.scale > 4f) m.scale = 1f; mods.put(n, m); } }
+                for (String n : NAMES) if (o.has(n)) {
+                    Mod m = GSON.fromJson(o.get(n), Mod.class);
+                    if (m != null) { if (m.scale < 0.4f || m.scale > 4f) m.scale = 1f; mods.put(n, m); }
+                }
             }
         } catch (Exception ignored) {}
         save();

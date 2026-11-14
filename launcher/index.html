@@ -48,8 +48,8 @@ input[type=range]{accent-color:#fff;width:100%;margin-top:8px}
   ZEPHRA<div class="acct" id="acct"></div>
 </div>
 <div class="mid">
-  <h1>Fast. Clean. Free.</h1>
-  <p class="sub">A lightweight client with boosted FPS and free PvP mods: zoom, keystrokes, CPS, armor HUD and more. Move, resize and toggle everything in game.</p>
+  <h1>Play smoother.</h1>
+  <p class="sub">Higher FPS and the PvP essentials in one light client. Zoom, keystrokes, CPS and armor status, all movable and resizable in game.</p>
 </div>
 <div class="bar"><i id="fill"></i></div>
 <div class="bottom">
@@ -84,5 +84,5 @@ $('play').onclick=async()=>{
   busy=false;render();
 };
 zephra.onStatus(s=>{$('msg').textContent=s.text;$('fill').style.width=s.pct+'%'});
-zephra.state().then(s=>{user=s.name;$('dir').textContent=s.dir;$('ram').value=s.ram;$('ramv').textContent=s.ram+' GB';render()});
+zephra.state().then(s=>{user=s.name;$('dir').textContent=s.dir;$('ram').max=s.maxRam;$('ram').value=s.ram;$('ramv').textContent=s.ram+' GB';render()});
 </script></body></html>

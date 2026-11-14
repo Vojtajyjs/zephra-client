@@ -9,11 +9,13 @@ import java.util.*;
 public class Config {
     public static class Mod {
         public boolean enabled; public int x, y; public float scale = 1f;
+        public int style = 0, size = 6, thick = 2, gap = 3, color = 0xFFFFFFFF; public boolean outline = true;
         public Mod() {}
         public Mod(boolean enabled, int x, int y) { this.enabled = enabled; this.x = x; this.y = y; }
     }
-    public static final String[] NAMES = {"fps", "cps", "keystrokes", "armor", "zoom", "fullbright", "togglesprint"};
-    public static final String[] LABELS = {"FPS", "CPS", "Keystrokes", "Armor", "Zoom (hold C)", "Fullbright", "Toggle sprint"};
+    public static final String[] NAMES = {"fps", "cps", "ping", "keystrokes", "armor", "zoom", "fullbright", "togglesprint", "lowfire", "crosshair"};
+    public static final String[] LABELS = {"FPS", "CPS", "Ping", "Keystrokes", "Armor", "Zoom (hold C)", "Fullbright", "Toggle sprint", "Low fire", "Crosshair"};
+    public static final String[] DESCS = {"Frames per second", "Clicks per second", "Latency to server", "Keys and mouse buttons", "Armor durability", "Hold C to zoom in", "See in the dark", "Always sprint", "Smaller fire overlay", "Custom crosshair"};
     public static Map<String, Mod> mods = new LinkedHashMap<>();
     static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("zephra.json");
     static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -21,11 +23,14 @@ public class Config {
     static void defaults() {
         mods.put("fps", new Mod(true, 6, 6));
         mods.put("cps", new Mod(true, 6, 20));
-        mods.put("keystrokes", new Mod(true, 6, 40));
-        mods.put("armor", new Mod(true, 6, 130));
+        mods.put("ping", new Mod(true, 6, 34));
+        mods.put("keystrokes", new Mod(true, 6, 52));
+        mods.put("armor", new Mod(true, 6, 140));
         mods.put("zoom", new Mod(true, 0, 0));
         mods.put("fullbright", new Mod(false, 0, 0));
         mods.put("togglesprint", new Mod(false, 0, 0));
+        mods.put("lowfire", new Mod(true, 0, 0));
+        mods.put("crosshair", new Mod(false, 0, 0));
     }
 
     public static void load() {

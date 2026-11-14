@@ -12,7 +12,7 @@ import java.util.Map;
 public class Hud {
     static final ArrayDeque<Long> LEFT = new ArrayDeque<>(), RIGHT = new ArrayDeque<>();
     public static final Map<String, int[]> BOUNDS = new LinkedHashMap<>();
-    static final String[] HUD = {"fps", "cps", "keystrokes", "armor"};
+    static final String[] HUD = {"fps", "cps", "ping", "keystrokes", "armor"};
 
     public static void click(int button) {
         long now = System.currentTimeMillis();
@@ -30,6 +30,8 @@ public class Hud {
             MinecraftClient mc = MinecraftClient.getInstance();
             if (mc.player == null || mc.options.hudHidden || mc.currentScreen != null) return;
             renderAll(ctx, mc, false);
+            if (Config.on("crosshair") && mc.options.getPerspective().isFirstPerson())
+                Crosshair.draw(ctx, ctx.getScaledWindowWidth() / 2, ctx.getScaledWindowHeight() / 2);
         });
     }
 
@@ -55,6 +57,11 @@ public class Hud {
         switch (n) {
             case "fps": return text(c, tr, mc.getCurrentFps() + " FPS");
             case "cps": return text(c, tr, cps(LEFT) + " | " + cps(RIGHT) + " CPS");
+            case "ping": {
+                var nh = mc.getNetworkHandler();
+                var e = nh == null ? null : nh.getPlayerListEntry(mc.player.getUuid());
+                return text(c, tr, (e == null || mc.isInSingleplayer() ? "--" : String.valueOf(e.getLatency())) + " ms");
+            }
             case "keystrokes": keys(c, tr, mc); return new int[]{64, 64};
             default: return armor(c, tr, mc);
         }

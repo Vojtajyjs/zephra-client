@@ -18,6 +18,7 @@ fs.mkdirSync(ROOT, { recursive: true });
 let win, mclc = null, profileName = null;
 const defaultDir = () => process.platform === 'darwin' ? path.join(app.getPath('appData'), 'minecraft')
   : process.platform === 'win32' ? path.join(app.getPath('appData'), '.minecraft') : path.join(app.getPath('home'), '.minecraft');
+const maxRam = () => Math.max(2, Math.min(16, Math.floor((os.totalmem() / 1073741824) * 0.6)));
 const gameDir = () => read().gameDir || defaultDir();
 const read = () => { try { return JSON.parse(fs.readFileSync(SETTINGS, 'utf8')); } catch { return {}; } };
 const write = (o) => fs.writeFileSync(SETTINGS, JSON.stringify({ ...read(), ...o }));
@@ -95,7 +96,7 @@ async function ensureMods() {
 
 ipcMain.handle('state', async () => {
   if (!mclc) await tryRestore();
-  return { name: profileName, ram: read().ram || 4, dir: gameDir() };
+  return { name: profileName, ram: Math.min(read().ram || 4, maxRam()), maxRam: maxRam(), dir: gameDir() };
 });
 ipcMain.handle('login', async () => {
   const xbox = await new Auth('select_account').launch('electron');
@@ -168,7 +169,7 @@ ipcMain.handle('play', async () => {
     status(code ? `Game closed with an error (code ${code}). Log: ${logFile}` : 'Ready', 0);
     win.show();
   });
-  const ram = read().ram || 4;
+  const ram = Math.min(read().ram || 4, maxRam());
   status('Starting Minecraft…', 95);
   const proc = await launcher.launch({
     authorization: mclc,

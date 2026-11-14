@@ -5,6 +5,10 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.Screens;
+import net.minecraft.client.gui.screen.GameMenuScreen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.option.SimpleOption;
@@ -39,7 +43,7 @@ public class ZephraClient implements ClientModInitializer {
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("Open Zephra menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, "Zephra"));
         zoomKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("Zoom", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_C, "Zephra"));
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
-            while (menuKey.wasPressed()) mc.setScreen(new ConfigScreen());
+            while (menuKey.wasPressed()) mc.setScreen(new ConfigScreen(null));
             if (Config.on("togglesprint") && mc.player != null && mc.currentScreen == null
                 && mc.options.forwardKey.isPressed() && !mc.player.isSneaking() && !mc.player.horizontalCollision) {
                 mc.player.setSprinting(true);
@@ -53,6 +57,13 @@ public class ZephraClient implements ClientModInitializer {
                 raw(mc.options.getFov(), Integer.valueOf(Math.max(5, savedFov / 4)));
             } else if (zoomOn) { raw(mc.options.getFov(), Integer.valueOf(savedFov)); zoomOn = false; }
         });
+        ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
+            if (screen instanceof GameMenuScreen) {
+                Screens.getButtons(screen).add(ButtonWidget.builder(Fonts.t("Zephra Settings"), b -> client.setScreen(new ConfigScreen(screen)))
+                    .dimensions(sw / 2 - 102, sh - 32, 204, 20).build());
+            }
+        });
+        ClientLifecycleEvents.CLIENT_STARTED.register(mc -> mc.options.getHideSplashTexts().setValue(true));
         ClientLifecycleEvents.CLIENT_STOPPING.register(ZephraClient::restore);
     }
 }

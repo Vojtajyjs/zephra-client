@@ -13,7 +13,7 @@ const LOADER = '0.16.10';
 const FABRIC_ID = `fabric-loader-${LOADER}-${MC}`;
 const CORE = new Set(['fabric-api', 'sodium', 'lithium']);
 const MODS = ['fabric-api', 'sodium', 'lithium', 'ferrite-core', 'immediatelyfast', 'entityculling', 'modernfix', 'sodium-extra', 'krypton'];
-const JVM_FLAGS = ['-XX:+UseG1GC', '-XX:MaxGCPauseMillis=50', '-XX:G1NewSizePercent=30', '-XX:G1ReservePercent=20',
+const JVM_FLAGS = ['-XX:+UnlockExperimentalVMOptions', '-XX:+UseG1GC', '-XX:MaxGCPauseMillis=50', '-XX:G1NewSizePercent=30', '-XX:G1ReservePercent=20',
   '-XX:+UnlockExperimentalVMOptions', '-XX:+DisableExplicitGC', '-XX:+ParallelRefProcEnabled'];
 
 const ROOT = path.join(app.getPath('appData'), '.zephra');

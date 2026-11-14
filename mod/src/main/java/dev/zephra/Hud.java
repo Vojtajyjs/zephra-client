@@ -58,9 +58,8 @@ public class Hud {
             case "fps": return text(c, tr, mc.getCurrentFps() + " FPS");
             case "cps": return text(c, tr, cps(LEFT) + " | " + cps(RIGHT) + " CPS");
             case "ping": {
-                var nh = mc.getNetworkHandler();
-                var e = nh == null ? null : nh.getPlayerListEntry(mc.player.getUuid());
-                return text(c, tr, (e == null || mc.isInSingleplayer() ? "--" : String.valueOf(e.getLatency())) + " ms");
+                int ms = Ping.get(mc);
+                return text(c, tr, (ms < 0 ? "--" : String.valueOf(ms)) + " ms");
             }
             case "keystrokes": keys(c, tr, mc); return new int[]{64, 64};
             default: return armor(c, tr, mc);

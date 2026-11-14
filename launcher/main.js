@@ -6,6 +6,8 @@ const fs = require('fs');
 const { Client } = require('minecraft-launcher-core');
 const { Auth } = require('msmc');
 
+// Set this to your deployed Zephra server (https://...workers.dev) to enable badges and capes.
+const API_URL = '';
 const MC = '1.21.4';
 const LOADER = '0.16.10';
 const FABRIC_ID = `fabric-loader-${LOADER}-${MC}`;
@@ -96,7 +98,7 @@ async function ensureMods() {
 
 ipcMain.handle('state', async () => {
   if (!mclc) await tryRestore();
-  return { name: profileName, ram: Math.min(read().ram || 4, maxRam()), maxRam: maxRam(), dir: gameDir() };
+  return { name: profileName, ram: Math.min(read().ram || 4, maxRam()), maxRam: maxRam(), dir: gameDir(), api: !!API_URL, network: read().network };
 });
 ipcMain.handle('login', async () => {
   const xbox = await new Auth('select_account').launch('electron');
@@ -109,6 +111,7 @@ ipcMain.handle('pickDir', async () => {
   if (!r.canceled && r.filePaths[0]) write({ gameDir: r.filePaths[0] });
   return gameDir();
 });
+ipcMain.handle('network', (_e, v) => write({ network: !!v }));
 ipcMain.handle('ram', (_e, gb) => write({ ram: gb }));
 
 const run = (cmd, args) => new Promise((res, rej) => execFile(cmd, args, (e, so, se) => (e ? rej(new Error(se || e.message)) : res(so))));
@@ -178,6 +181,7 @@ ipcMain.handle('play', async () => {
     version: { number: MC, type: 'release', custom: FABRIC_ID },
     memory: { max: `${ram}G`, min: '1G' },
     overrides: { gameDirectory: gameDir() },
+    customArgs: ['-Dzephra.network=' + (read().network === true), ...(API_URL ? ['-Dzephra.api=' + API_URL] : [])],
   });
   if (!proc) throw new Error(`Could not start the game. Log: ${logFile}`);
   status('Playing', 100);

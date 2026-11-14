@@ -51,5 +51,18 @@ public class Config {
         try { Files.writeString(FILE, GSON.toJson(mods)); } catch (Exception ignored) {}
     }
 
+    public static void resetLayout() {
+        Map<String, Mod> keep = mods;
+        mods = new LinkedHashMap<>();
+        defaults();
+        Map<String, Mod> d = mods;
+        mods = keep;
+        for (String n : new String[]{"fps", "cps", "ping", "keystrokes", "armor"}) {
+            Mod m = mods.get(n), dm = d.get(n);
+            if (m != null && dm != null) { m.x = dm.x; m.y = dm.y; m.scale = 1f; }
+        }
+        save();
+    }
+
     public static boolean on(String n) { Mod m = mods.get(n); return m != null && m.enabled; }
 }

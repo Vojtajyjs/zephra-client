@@ -62,8 +62,16 @@ input[type=range]{accent-color:#fff;width:100%;margin-top:8px}
   <h2>SETTINGS</h2>
   <div class="row"><div style="display:flex;justify-content:space-between"><span>Memory</span><span id="ramv" style="color:#fff">4 GB</span></div><input id="ram" type="range" min="2" max="16" step="1" value="4"></div>
   <div class="row">Game folder<div class="v"><span id="dir"></span><button class="link" id="pick">Change</button></div></div>
+  <div class="row" id="netrow" style="display:none"><label style="display:flex;justify-content:space-between;align-items:center;gap:16px;color:#fff;cursor:pointer"><span>Zephra network<br><small style="color:#888">Shows your Zephra badge and cape to other Zephra players. Sends your Minecraft UUID and name to the Zephra server.</small></span><input type="checkbox" id="net" style="accent-color:#fff;width:18px;height:18px"></label></div>
   <div class="row">Mods are installed into the “mods” folder inside the game folder.</div>
   <button class="done" id="done">Done</button>
+</div></div>
+<div class="modal" id="consent"><div class="panel">
+  <h2>ZEPHRA NETWORK</h2>
+  <p style="color:#bbb;font-size:14px;margin-bottom:10px">Show a Zephra badge next to your name and your cape to other Zephra players?</p>
+  <p style="color:#777;font-size:12.5px">This sends your Minecraft UUID and name to the Zephra server. Your access token is never shared. You can change this any time in Settings.</p>
+  <button class="done" id="allow">Allow</button>
+  <button class="link" id="deny" style="display:block;margin:14px auto 0">No thanks</button>
 </div></div>
 <script>
 const $=id=>document.getElementById(id);let user=null,busy=false;
@@ -84,5 +92,8 @@ $('play').onclick=async()=>{
   busy=false;render();
 };
 zephra.onStatus(s=>{$('msg').textContent=s.text;$('fill').style.width=s.pct+'%'});
-zephra.state().then(s=>{user=s.name;$('dir').textContent=s.dir;$('ram').max=s.maxRam;$('ram').value=s.ram;$('ramv').textContent=s.ram+' GB';render()});
+$('net').onchange=e=>zephra.setNetwork(e.target.checked);
+$('allow').onclick=()=>{zephra.setNetwork(true);$('net').checked=true;$('consent').classList.remove('open')};
+$('deny').onclick=()=>{zephra.setNetwork(false);$('net').checked=false;$('consent').classList.remove('open')};
+zephra.state().then(s=>{if(s.api){$('netrow').style.display='block';$('net').checked=s.network===true;if(s.network===undefined)$('consent').classList.add('open')}user=s.name;$('dir').textContent=s.dir;$('ram').max=s.maxRam;$('ram').value=s.ram;$('ramv').textContent=s.ram+' GB';render()});
 </script></body></html>

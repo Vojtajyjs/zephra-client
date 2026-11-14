@@ -2,7 +2,6 @@ package dev.zephra;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GraphicsMode;
-import net.minecraft.client.option.ParticlesMode;
 
 /** FPS profile: much faster, but still a comfortable view distance. */
 public class Perf {
@@ -14,7 +13,6 @@ public class Perf {
         o.getBiomeBlendRadius().setValue(2);
         o.getMaxFps().setValue(260);
         o.getEnableVsync().setValue(false);
-        o.getParticles().setValue(ParticlesMode.DECREASED);
         o.getGraphicsMode().setValue(GraphicsMode.FAST);
         o.write();
     }

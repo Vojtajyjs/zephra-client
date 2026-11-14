@@ -31,6 +31,7 @@ public class Config {
         mods.put("togglesprint", new Mod(false, 0, 0));
         mods.put("lowfire", new Mod(true, 0, 0));
         mods.put("crosshair", new Mod(false, 0, 0));
+        mods.put("perf", new Mod(false, 0, 0));
     }
 
     public static void load() {
@@ -38,6 +39,7 @@ public class Config {
         try {
             if (Files.exists(FILE)) {
                 JsonObject o = JsonParser.parseString(Files.readString(FILE)).getAsJsonObject();
+                if (o.has("perf")) { Mod pm = GSON.fromJson(o.get("perf"), Mod.class); if (pm != null) mods.put("perf", pm); }
                 for (String n : NAMES) if (o.has(n)) {
                     Mod m = GSON.fromJson(o.get(n), Mod.class);
                     if (m != null) { if (m.scale < 0.4f || m.scale > 4f) m.scale = 1f; mods.put(n, m); }

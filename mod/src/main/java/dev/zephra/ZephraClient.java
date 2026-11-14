@@ -16,6 +16,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.option.SimpleOption;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
 import org.lwjgl.glfw.GLFW;
 
 public class ZephraClient implements ClientModInitializer {
@@ -41,6 +42,8 @@ public class ZephraClient implements ClientModInitializer {
         Zoom.restore(mc);
     }
 
+    static boolean inside(double mx, double my, int x, int y) { return mx >= x && mx < x + 22 && my >= y && my < y + 22; }
+
     @Override public void onInitializeClient() {
         Config.load();
         Hud.init();
@@ -65,23 +68,37 @@ public class ZephraClient implements ClientModInitializer {
 
         ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
             if (screen instanceof GameMenuScreen) {
-                Screens.getButtons(screen).add(ButtonWidget.builder(Text.literal("Zephra Settings"), b -> client.setScreen(new ConfigScreen(screen)))
-                    .dimensions(sw - 116, 6, 110, 20).build());
+                var buttons = Screens.getButtons(screen);
+                int x = sw / 2 - 102, y = sh - 32, w = 204;
+                for (var wd : buttons) {
+                    if (wd instanceof ButtonWidget bw && bw.getMessage().getContent() instanceof TranslatableTextContent t
+                        && (t.getKey().equals("menu.returnToMenu") || t.getKey().equals("menu.disconnect"))) {
+                        x = bw.getX(); y = bw.getY() + bw.getHeight() + 4; w = bw.getWidth();
+                    }
+                }
+                buttons.add(ButtonWidget.builder(Text.literal("Zephra Settings"), b -> client.setScreen(new ConfigScreen(screen)))
+                    .dimensions(x, y, w, 20).build());
             } else if (screen instanceof TitleScreen) {
-                int gx = sw - 28, gy = 8;
+                int gx = sw - 28, cx = sw - 54, gy = 8;
                 ScreenEvents.afterRender(screen).register((s, ctx, mx, my, d) -> {
-                    boolean hov = mx >= gx && mx < gx + 22 && my >= gy && my < gy + 22;
-                    Ui.rr(ctx, hov ? "rr_cardhi" : "rr_card", gx, gy, 22, 22, 8);
+                    Ui.rr(ctx, inside(mx, my, gx, gy) ? "rr_cardhi" : "rr_card", gx, gy, 22, 22, 8);
                     Ui.img(ctx, "gear", gx + 4, gy + 4, 14, 14);
+                    Ui.rr(ctx, inside(mx, my, cx, gy) ? "rr_cardhi" : "rr_card", cx, gy, 22, 22, 8);
+                    Ui.img(ctx, "cape_icon", cx + 4, gy + 4, 14, 14);
                 });
                 ScreenMouseEvents.allowMouseClick(screen).register((s, mx, my, btn) -> {
-                    if (btn == 0 && mx >= gx && mx < gx + 22 && my >= gy && my < gy + 22) { client.setScreen(new ConfigScreen(s)); return false; }
+                    if (btn != 0) return true;
+                    if (inside(mx, my, gx, gy)) { client.setScreen(new ConfigScreen(s)); return false; }
+                    if (inside(mx, my, cx, gy)) { client.setScreen(new CapeScreen(s)); return false; }
                     return true;
                 });
             }
         });
 
-        ClientLifecycleEvents.CLIENT_STARTED.register(mc -> mc.options.getHideSplashTexts().setValue(true));
+        ClientLifecycleEvents.CLIENT_STARTED.register(mc -> {
+            mc.options.getHideSplashTexts().setValue(true);
+            if (!Config.on("perf")) { Perf.apply(mc); Config.mods.get("perf").enabled = true; Config.save(); }
+        });
         ClientLifecycleEvents.CLIENT_STOPPING.register(ZephraClient::restore);
     }
 }

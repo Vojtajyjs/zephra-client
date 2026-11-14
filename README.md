@@ -11,3 +11,6 @@
 ## Aplikace pro ostatní
 Lokálně: `cd launcher && npm run dist` (instalátor je v launcher/dist).
 Pro všechny systémy: nahraj složku na GitHub a pushni tag `git tag v0.1.0 && git push --tags`, GitHub Actions postaví .dmg, .exe a .AppImage do Releases.
+
+## Licenses
+The Zephra font is Poppins (SIL Open Font License 1.1), see `THIRD_PARTY_LICENSES/Poppins-OFL.txt`.

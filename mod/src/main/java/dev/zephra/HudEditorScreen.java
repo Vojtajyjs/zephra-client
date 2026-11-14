@@ -32,7 +32,7 @@ public class HudEditorScreen extends Screen {
             c.fill(x1, y1, x2, y1 + 1, col); c.fill(x1, y2 - 1, x2, y2, col);
             c.fill(x1, y1, x1 + 1, y2, col); c.fill(x2 - 1, y1, x2, y2, col);
         }
-        String hint = "Drag to move   |   Scroll to resize   |   Esc to finish";
+        String hint = "Drag to move   |   Scroll to resize   |   R to reset   |   Esc to finish";
         c.drawText(textRenderer, Fonts.t(hint), (width - textRenderer.getWidth(Fonts.t(hint))) / 2, height - 22, 0xFFFFFFFF, false);
     }
 
@@ -69,6 +69,11 @@ public class HudEditorScreen extends Screen {
             return true;
         }
         return super.mouseScrolled(mx, my, hx, vy);
+    }
+
+    @Override public boolean keyPressed(int key, int scan, int mods) {
+        if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_R) { Config.resetLayout(); return true; }
+        return super.keyPressed(key, scan, mods);
     }
 
     @Override public void close() { Config.save(); client.setScreen(parent); }

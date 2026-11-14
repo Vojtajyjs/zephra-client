@@ -10,10 +10,11 @@ public class ConfigScreen extends Screen {
     static final int N = Config.NAMES.length, CELLS = N + 4, ROWS = (CELLS + 1) / 2;
     static final int PH = HEAD + ROWS * CH + (ROWS - 1) * GAP + FOOT;
     static final int CW = (PW - 2 * PAD - GAP) / 2;
-    static final String[] SPEC_T = {"Edit HUD layout", "Crosshair editor", "Capes", "Reset HUD"};
-    static final String[] SPEC_D = {"Move and resize", "Style, size, color", "Perks for Zephra users", "Back to defaults"};
+    static final String[] SPEC_T = {"Edit HUD layout", "Crosshair editor", "HUD colors", "Optimize FPS"};
+    static final String[] SPEC_D = {"Move and resize", "Style, size, color", "Text and keys", "Faster, still smooth"};
     final float[] anim = new float[N];
     final Screen parent;
+    long appliedAt;
 
     public ConfigScreen(Screen parent) {
         super(Text.literal("Zephra"));
@@ -47,7 +48,7 @@ public class ConfigScreen extends Screen {
             if (i >= N) {
                 Ui.rr(c, hover ? "rr_whitehi" : "rr_white", p[0], p[1], CW, CH, 8);
                 Ui.txt(c, textRenderer, SPEC_T[i - N], p[0] + 10, p[1] + 8, 0xFF000000, 1f);
-                Ui.txt(c, textRenderer, SPEC_D[i - N], p[0] + 10, p[1] + 21, 0xFF555555, 0.8f);
+                Ui.txt(c, textRenderer, i == N + 3 && System.currentTimeMillis() - appliedAt < 2500 ? "Applied!" : SPEC_D[i - N], p[0] + 10, p[1] + 21, 0xFF555555, 0.8f);
                 Ui.txt(c, textRenderer, ">", p[0] + CW - 16, p[1] + 14, 0xFF000000, 1f);
                 continue;
             }
@@ -70,8 +71,8 @@ public class ConfigScreen extends Screen {
                 if (!in(cell(i), lx, ly)) continue;
                 if (i == N) client.setScreen(new HudEditorScreen(this));
                 else if (i == N + 1) client.setScreen(new CrosshairScreen(this));
-                else if (i == N + 2) client.setScreen(new CapeScreen(this));
-                else if (i == N + 3) Config.resetLayout();
+                else if (i == N + 2) client.setScreen(new ColorScreen(this));
+                else if (i == N + 3) { Perf.apply(client); appliedAt = System.currentTimeMillis(); }
                 else { Config.Mod m = Config.mods.get(Config.NAMES[i]); m.enabled = !m.enabled; Config.save(); }
                 return true;
             }

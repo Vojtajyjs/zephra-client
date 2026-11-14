@@ -7,11 +7,14 @@ const { Client } = require('minecraft-launcher-core');
 const { Auth } = require('msmc');
 
 // Set this to your deployed Zephra server (https://...workers.dev) to enable badges and capes.
-const API_URL = 'https://zephra-api.zephra123.workers.dev';
+const API_URL = '';
 const MC = '1.21.4';
 const LOADER = '0.16.10';
 const FABRIC_ID = `fabric-loader-${LOADER}-${MC}`;
-const MODS = ['fabric-api', 'sodium', 'lithium', 'ferrite-core', 'immediatelyfast', 'entityculling'];
+const CORE = new Set(['fabric-api', 'sodium', 'lithium']);
+const MODS = ['fabric-api', 'sodium', 'lithium', 'ferrite-core', 'immediatelyfast', 'entityculling', 'modernfix', 'sodium-extra', 'krypton'];
+const JVM_FLAGS = ['-XX:+UseG1GC', '-XX:MaxGCPauseMillis=50', '-XX:G1NewSizePercent=30', '-XX:G1ReservePercent=20',
+  '-XX:+UnlockExperimentalVMOptions', '-XX:+DisableExplicitGC', '-XX:+ParallelRefProcEnabled'];
 
 const ROOT = path.join(app.getPath('appData'), '.zephra');
 const SETTINGS = path.join(ROOT, 'launcher.json');
@@ -63,20 +66,37 @@ async function ensureFabric() {
   fs.writeFileSync(file, await r.text());
 }
 
-async function resolveMod(slug) {
+async function resolveMod(id) {
   const q = `game_versions=${encodeURIComponent(JSON.stringify([MC]))}&loaders=${encodeURIComponent('["fabric"]')}`;
-  const r = await fetch(`https://api.modrinth.com/v2/project/${slug}/version?${q}`, { headers: UA });
+  const r = await fetch(`https://api.modrinth.com/v2/project/${id}/version?${q}`, { headers: UA });
   const list = await r.json();
-  if (!Array.isArray(list) || !list.length) throw new Error(`No ${MC} build of ${slug}`);
+  if (!Array.isArray(list) || !list.length) throw new Error(`No ${MC} build of ${id}`);
   const f = list[0].files.find((x) => x.primary) || list[0].files[0];
-  return { name: f.filename, url: f.url };
+  const deps = (list[0].dependencies || []).filter((d) => d.dependency_type === 'required' && d.project_id).map((d) => d.project_id);
+  return { name: f.filename, url: f.url, deps };
+}
+
+// Resolves the mods and everything they require. Optional extras are skipped if they have no 1.21.4 build.
+async function resolveAll(slugs) {
+  const seen = new Set(), out = new Map(), queue = [...slugs];
+  while (queue.length) {
+    const id = queue.shift();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    status(`Checking ${id}…`, 12);
+    try {
+      const m = await resolveMod(id);
+      out.set(m.name, m);
+      for (const d of m.deps) if (!seen.has(d)) queue.push(d);
+    } catch (e) { if (CORE.has(id)) throw e; }
+  }
+  return [...out.values()];
 }
 
 async function ensureMods() {
   const dir = path.join(gameDir(), 'mods');
   fs.mkdirSync(dir, { recursive: true });
-  const wanted = [];
-  for (let i = 0; i < MODS.length; i++) { status(`Checking ${MODS[i]}…`, 10 + i * 4); wanted.push(await resolveMod(MODS[i])); }
+  const wanted = await resolveAll(MODS);
   const own = path.join(process.resourcesPath, 'resources', 'zephra-client.jar');
   const ownJar = fs.existsSync(own) ? own : path.join(__dirname, 'resources', 'zephra-client.jar');
   // only ever delete jars this launcher installed itself
@@ -179,9 +199,9 @@ ipcMain.handle('play', async () => {
     root: ROOT,
     javaPath: java,
     version: { number: MC, type: 'release', custom: FABRIC_ID },
-    memory: { max: `${ram}G`, min: '1G' },
+    memory: { max: `${ram}G`, min: `${Math.min(2, ram)}G` },
     overrides: { gameDirectory: gameDir() },
-    customArgs: ['-Dzephra.network=' + (read().network === true), ...(API_URL ? ['-Dzephra.api=' + API_URL] : [])],
+    customArgs: [...JVM_FLAGS, '-Dzephra.network=' + (read().network === true), ...(API_URL ? ['-Dzephra.api=' + API_URL] : [])],
   });
   if (!proc) throw new Error(`Could not start the game. Log: ${logFile}`);
   status('Playing', 100);

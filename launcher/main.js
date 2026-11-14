@@ -7,7 +7,7 @@ const { Client } = require('minecraft-launcher-core');
 const { Auth } = require('msmc');
 
 // Set this to your deployed Zephra server (https://...workers.dev) to enable badges and capes.
-const API_URL = '';
+const API_URL = 'https://zephra-api.zephra123.workers.dev';
 const MC = '1.21.4';
 const LOADER = '0.16.10';
 const FABRIC_ID = `fabric-loader-${LOADER}-${MC}`;

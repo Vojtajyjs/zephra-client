@@ -21,23 +21,24 @@ export default {
   async fetch(req, env) {
     const p = new URL(req.url).pathname;
     try {
-      if (p === "/" ) return json({ ok: true, service: "zephra" });
+      if (p === "/") return json({ ok: true, service: "zephra" });
 
       if (p === "/v1/nonce" && req.method === "GET") {
-        const ts = Date.now().toString(16).padStart(12, "0");
-        const rnd = hex(crypto.getRandomValues(new Uint8Array(8)));
-        const mac = (await hmac(env.SECRET, "n" + ts + rnd)).slice(0, 16);
+        // Mojang only accepts a serverId of at most 41 characters, so the nonce is exactly 40.
+        const ts = Math.floor(Date.now() / 1000).toString(16).padStart(8, "0");
+        const rnd = hex(crypto.getRandomValues(new Uint8Array(6)));
+        const mac = (await hmac(env.SECRET, "n" + ts + rnd)).slice(0, 20);
         return json({ nonce: ts + rnd + mac });
       }
 
       if (p === "/v1/login" && req.method === "POST") {
         const { name, nonce } = await req.json();
-        if (!/^\w{1,16}$/.test(name || "") || !/^[0-9a-f]{44}$/.test(nonce || "")) return json({ error: "bad request" }, 400);
-        const ts = parseInt(nonce.slice(0, 12), 16);
-        const mac = (await hmac(env.SECRET, "n" + nonce.slice(0, 28))).slice(0, 16);
-        if (mac !== nonce.slice(28) || Math.abs(Date.now() - ts) > 90000) return json({ error: "nonce" }, 401);
-        const r = await fetch(`https://sessionserver.mojang.com/session/minecraft/hasJoined?username=${encodeURIComponent(name)}&serverId=${nonce}`);
-        if (r.status !== 200) return json({ error: "auth" }, 401);
+        if (!/^\w{1,16}$/.test(name || "") || !/^[0-9a-f]{40}$/.test(nonce || "")) return json({ error: "bad request" }, 400);
+        const ts = parseInt(nonce.slice(0, 8), 16) * 1000;
+        const mac = (await hmac(env.SECRET, "n" + nonce.slice(0, 20))).slice(0, 20);
+        if (mac !== nonce.slice(20) || Math.abs(Date.now() - ts) > 90000) { console.log("login: bad nonce, age ms", Date.now() - ts); return json({ error: "nonce" }, 401); }
+        const r = await fetch("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + encodeURIComponent(name) + "&serverId=" + nonce, { headers: { "User-Agent": "ZephraAPI/1.0 (+https://github.com/Vojtajyjs/zephra-client)", "Accept": "application/json" } });
+        if (r.status !== 200) { const t = (await r.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 400); console.log("login: Mojang hasJoined returned", r.status, "for", name, "body:", t); return json({ error: "auth", mojang: r.status }, 401); }
         const prof = await r.json();
         const exp = Date.now() + 3600e3;
         const sig = await hmac(env.SECRET, "t" + prof.id + "." + exp);
@@ -45,7 +46,7 @@ export default {
       }
 
       const uuid = await auth(req, env);
-      if (!uuid) return json({ error: "unauthorized" }, 401);
+      if (!uuid) { console.log("token rejected on", p); return json({ error: "unauthorized" }, 401); }
 
       if (p === "/v1/sync" && req.method === "POST") {
         const now = Date.now();

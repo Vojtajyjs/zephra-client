@@ -46,8 +46,9 @@ public class CapeScreen extends Screen {
             else c.drawTexture(RenderLayer::getGuiTextured, Capes.id(IDS[i]), x + (CW - 40) / 2, y + 12, 4f, 4f, 40, 64, 40, 64, 256, 128);
             Ui.txt(c, textRenderer, NAMES[i], x + (CW - Ui.tw(textRenderer, NAMES[i], 1f)) / 2, y + CHT - 20, fg, 1f);
         }
-        String note = !ZephraNet.API.isEmpty() && !ZephraNet.ALLOWED ? "Turn on Zephra network in the launcher settings to use capes."
-            : ZephraNet.API.isEmpty() ? "The Zephra network is not set up yet." : "Only other Zephra users can see your cape.";
+        String note = ZephraNet.API.isEmpty() ? "The Zephra network is not set up yet."
+            : !ZephraNet.ALLOWED ? "Turn on Zephra network in the launcher settings to use capes."
+            : ZephraNet.status;
         Ui.txt(c, textRenderer, note, (PW - Ui.tw(textRenderer, note, 0.8f)) / 2, PH - 30, 0xFF8A8A8A, 0.8f);
         Ui.txt(c, textRenderer, "Esc to go back", (PW - Ui.tw(textRenderer, "Esc to go back", 0.8f)) / 2, PH - 16, 0xFF6E6E6E, 0.8f);
         mat.pop();

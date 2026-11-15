@@ -5,4 +5,4 @@ compatibility_date = "2025-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "zephra"
-database_id = "PASTE_DATABASE_ID_HERE"
+database_id = "058c2bba-7ffa-4fe2-a045-2cb58403dc44"

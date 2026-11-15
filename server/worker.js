@@ -49,7 +49,9 @@ export default {
 
       if (p === "/v1/sync" && req.method === "POST") {
         const now = Date.now();
-        await env.DB.prepare("INSERT INTO presence(uuid,seen) VALUES(?,?) ON CONFLICT(uuid) DO UPDATE SET seen=excluded.seen").bind(uuid, now).run();
+        let beat = true;
+        try { const b = await req.json(); if (b && b.beat === false) beat = false; } catch {}
+        if (beat) await env.DB.prepare("INSERT INTO presence(uuid,seen) VALUES(?,?) ON CONFLICT(uuid) DO UPDATE SET seen=excluded.seen").bind(uuid, now).run();
         if (Math.random() < 0.02) await env.DB.prepare("DELETE FROM presence WHERE seen<?").bind(now - 600000).run();
         const rows = await env.DB.prepare(
           "SELECT p.uuid AS u, COALESCE(f.cape,'none') AS c FROM presence p LEFT JOIN prefs f ON f.uuid=p.uuid WHERE p.seen>? LIMIT 2000"

@@ -23,9 +23,11 @@ public class ZephraNet {
     public static final String API = System.getProperty("zephra.api", "");
     public static final boolean ALLOWED = Boolean.getBoolean("zephra.network");
     public static volatile Map<UUID, String> users = Map.of();
+    public static volatile String status = "Join a world to connect.";
     static volatile String token;
-    static volatile long tokenExp, last;
+    static volatile long tokenExp, last, lastBeat;
     static volatile boolean busy;
+    static Object lastWorld;
     static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     public static boolean enabled() { return ALLOWED && !API.isEmpty(); }
@@ -36,20 +38,34 @@ public class ZephraNet {
         catch (Exception e) { return null; }
     }
 
+    /** Syncs right after joining a world, then refreshes the list every 20 s and announces itself every minute. */
     public static void tick(MinecraftClient mc) {
-        if (!enabled() || mc.world == null || busy) return;
+        if (!enabled()) return;
+        if (mc.world == null) { lastWorld = null; return; }
+        if (busy) return;
         long now = System.currentTimeMillis();
-        if (now - last < 60_000) return;
+        if (mc.world != lastWorld) { lastWorld = mc.world; last = 0; }
+        if (now - last < 20_000) return;
         last = now; busy = true;
+        boolean beat = now - lastBeat >= 55_000;
         Thread t = new Thread(() -> {
-            try { sync(mc); } catch (Exception e) { token = null; } finally { busy = false; }
+            try {
+                sync(mc, beat);
+                if (beat) lastBeat = System.currentTimeMillis();
+                status = "Connected. " + users.size() + " Zephra player" + (users.size() == 1 ? "" : "s") + " online.";
+            } catch (Exception e) {
+                token = null;
+                status = "Could not reach the Zephra server (" + e.getMessage() + ").";
+            } finally { busy = false; }
         }, "zephra-net");
         t.setDaemon(true); t.start();
     }
 
-    static void sync(MinecraftClient mc) throws Exception {
+    static void sync(MinecraftClient mc, boolean beat) throws Exception {
         if (token == null || System.currentTimeMillis() > tokenExp) login(mc);
-        JsonObject o = JsonParser.parseString(send("POST", "/v1/sync", "{}", token)).getAsJsonObject();
+        JsonObject req = new JsonObject();
+        req.addProperty("beat", beat);
+        JsonObject o = JsonParser.parseString(send("POST", "/v1/sync", req.toString(), token)).getAsJsonObject();
         Map<UUID, String> m = new HashMap<>();
         for (JsonElement e : o.getAsJsonArray("users")) {
             JsonObject u = e.getAsJsonObject();
